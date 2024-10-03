@@ -1,6 +1,7 @@
 import os
 import django
 import asyncio
+import logging
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
@@ -19,8 +20,12 @@ API_TOKEN = '7424564839:AAGgdtvaLz8FzW2Frb9vrMm4cM0JdBof1Fo'
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
+# Logger setup
+logger = logging.getLogger(__name__)
+
 # Constants
 VERIFICATION_ATTEMPT = {}
+
 
 # Reply keyboard for main options
 def main_menu_keyboard():
@@ -34,32 +39,46 @@ def main_menu_keyboard():
     )
     return keyboard
 
+
 @dp.message(Command("start"))
 async def start_handler(message: Message):
     await message.answer("Salom! Iltimos, quyidagi opsiyalardan birini tanlang:", reply_markup=main_menu_keyboard())
+
 
 @dp.message(F.text == "🛂 Passport ma'lumotlarini kiritish")
 async def request_passport(message: Message):
     VERIFICATION_ATTEMPT[message.from_user.id] = "input"
     await message.answer("Iltimos, passport ma'lumotlaringizni kiriting. Format: seriya raqami.")
 
+
 @dp.message(F.text == "✔️ Shaxsni tasdiqlash")
 async def request_verification(message: Message):
     VERIFICATION_ATTEMPT[message.from_user.id] = "verify"
     await message.answer("Shaxsingizni tasdiqlash uchun passport ma'lumotlarini kiriting. Format: seriya raqami.")
 
+
 @dp.message(F.text == "📝 Yozishmalar tarixini ko'rish")
 async def show_history(message: Message):
     await history_handler(message)
 
+
 @dp.message()
 async def handle_passport_data(message: Message):
     if " " not in message.text:
+        await message.answer(
+            "Iltimos, passport ma'lumotlaringizni to'g'ri formatda kiriting: seriya va raqam bo'sh joy bilan ajratilgan bo'lishi kerak.")
         return
 
     passport_info = message.text.split()
-    if len(passport_info) != 2 or not passport_info[0].isalpha() or len(passport_info[0]) != 2 or not passport_info[1].isdigit() or len(passport_info[1]) != 7:
-        await message.answer("Iltimos, passport ma'lumotlaringizni to'g'ri formatda kiriting. Seriya 2 harf, raqam 7 raqamdan iborat bo'lishi kerak.")
+
+    if len(passport_info) != 2:
+        await message.answer("Passport seriyasi va raqamini bo'sh joy bilan ajrating.")
+        return
+    elif not passport_info[0].isalpha() or len(passport_info[0]) != 2:
+        await message.answer("Passport seriyasi 2 ta harfdan iborat bo'lishi kerak.")
+        return
+    elif not passport_info[1].isdigit() or len(passport_info[1]) != 7:
+        await message.answer("Passport raqami 7 ta raqamdan iborat bo'lishi kerak.")
         return
 
     passport_series, passport_number = passport_info
@@ -71,10 +90,11 @@ async def handle_passport_data(message: Message):
         else:
             await save_passport_data(message, passport_series, passport_number)
     except Exception as e:
-        print(f"Error processing passport data: {e}")
+        logger.error(f"Error processing passport data: {e}")
         await message.answer("Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.")
     finally:
         VERIFICATION_ATTEMPT.pop(message.from_user.id, None)
+
 
 # Passport ma'lumotlarini tekshirish va olish
 async def verify_identity(message: Message, passport_series: str, passport_number: str):
@@ -102,6 +122,7 @@ async def verify_identity(message: Message, passport_series: str, passport_numbe
         await sync_to_async(chat_message.save)()
 
         await message.answer("❌ Kiritilgan ma'lumotlar avval saqlangan ma'lumotlar bilan mos kelmadi.")
+
 
 # Passport ma'lumotlarini saqlash
 async def save_passport_data(message: Message, passport_series: str, passport_number: str):
@@ -135,6 +156,7 @@ async def save_passport_data(message: Message, passport_series: str, passport_nu
 
     await message.answer("✅ Ma'lumotlaringiz saqlandi!")
 
+
 async def history_handler(message: Message):
     user_profile = await sync_to_async(lambda: UserProfile.objects.filter(user_id=message.from_user.id).first())()
 
@@ -150,9 +172,11 @@ async def history_handler(message: Message):
     response = "\n".join([f"{msg.timestamp}: {msg.platform} - {msg.message_text}" for msg in messages])
     await message.answer(response)
 
+
 async def main():
     print("Bot ishga tushdi!")
     await dp.start_polling(bot)
+
 
 if __name__ == '__main__':
     asyncio.run(main())

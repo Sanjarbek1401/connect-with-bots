@@ -1,10 +1,10 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate,logout
+from django.contrib.auth import login, authenticate, logout
 from .forms import UserRegistrationForm, UserProfileForm
 from django.contrib import messages
 from .models import UserProfile
 from django.db import IntegrityError
-
+from .models import ChatMessage
 
 
 def index(request):
@@ -20,17 +20,17 @@ def register(request):
         if user_form.is_valid() and profile_form.is_valid():
             try:
                 user = user_form.save()
-                # Profil mavjud yoki yo'qligini tekshirish
-                if not UserProfile.objects.filter(user=user).exists():
-                    profile = profile_form.save(commit=False)
-                    profile.user = user
-                    profile.save()
+                # Profil yaratish va passport ma'lumotlarini saqlash
+                profile = profile_form.save(commit=False)
+                profile.user = user
+                profile.save()
+
                 login(request, user)
                 messages.success(request, "Ro'yxatdan muvaffaqiyatli o'tdingiz.")
                 return redirect('index')
             except IntegrityError as e:
                 # UNIQUE constraint xatosini qo'lga olish
-                messages.error(request, "Profil yaratishda xatolik yuz berdi: profil allaqachon mavjud.")
+                messages.error(request, "Bu passport raqami allaqachon ro'yxatdan o'tgan.")
             except Exception as e:
                 # Boshqa umumiy xatolarni qo'lga olish
                 messages.error(request, f"Ro'yxatdan o'tishda xatolik: {str(e)}")
@@ -68,5 +68,12 @@ def logout_confirm(request):
         return redirect('goodbye')
     return render(request, 'app/logout_confirm.html')
 
+
 def goodbye_view(request):
     return render(request, 'app/goodbye.html')
+
+
+
+def dashboard_view(request):
+    chat_messages = ChatMessage.objects.all()  # Barcha yozishmalarni olish
+    return render(request, 'admin/dashboard.html', {'chat_messages': chat_messages})
