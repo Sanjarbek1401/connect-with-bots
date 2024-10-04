@@ -43,7 +43,7 @@
 </head>
 <body>
     <header>
-        <h1>Xush kelibsiz, {{ user.username }}!</h1>
+        <h1>Xush kelibsiz, {{ user_name }}!</h1>
         <!-- Logout tugmasi -->
         <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}

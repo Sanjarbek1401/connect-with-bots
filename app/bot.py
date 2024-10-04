@@ -112,7 +112,7 @@ async def verify_identity(message: Message, passport_series: str, passport_numbe
         )
         await sync_to_async(chat_message.save)()
 
-        await message.answer("✅ Shaxsingiz tasdiqlandi!")
+        await message.answer("✅ Shaxsingiz tasdiqlandi! Xush kelibsiz")
     else:
         chat_message = ChatMessage(
             user_profile=user_profile,

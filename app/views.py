@@ -5,6 +5,8 @@ from django.contrib import messages
 from .models import UserProfile
 from django.db import IntegrityError
 from .models import ChatMessage
+from django.contrib.admin.views.decorators import staff_member_required
+
 
 
 def index(request):
@@ -18,22 +20,23 @@ def register(request):
         user_form = UserRegistrationForm(request.POST)
         profile_form = UserProfileForm(request.POST)
         if user_form.is_valid() and profile_form.is_valid():
-            try:
-                user = user_form.save()
-                # Profil yaratish va passport ma'lumotlarini saqlash
-                profile = profile_form.save(commit=False)
-                profile.user = user
-                profile.save()
-
-                login(request, user)
-                messages.success(request, "Ro'yxatdan muvaffaqiyatli o'tdingiz.")
-                return redirect('index')
-            except IntegrityError as e:
-                # UNIQUE constraint xatosini qo'lga olish
+            passport_number = profile_form.cleaned_data['passport_number']
+            if UserProfile.objects.filter(passport_number=passport_number).exists():
                 messages.error(request, "Bu passport raqami allaqachon ro'yxatdan o'tgan.")
-            except Exception as e:
-                # Boshqa umumiy xatolarni qo'lga olish
-                messages.error(request, f"Ro'yxatdan o'tishda xatolik: {str(e)}")
+            else:
+                try:
+                    user = user_form.save()
+                    profile = profile_form.save(commit=False)
+                    profile.user = user
+                    user.is_active = True
+                    profile.save()
+                    login(request, user)
+                    messages.success(request, "Ro'yxatdan muvaffaqiyatli o'tdingiz.")
+                    return redirect('index')
+                except IntegrityError as e:
+                    messages.error(request, "Xatolik: " + str(e))
+                except Exception as e:
+                    messages.error(request, f"Ro'yxatdan o'tishda xatolik: {str(e)}")
         else:
             messages.error(request, "Ro'yxatdan o'tish formasi noto'g'ri to'ldirilgan.")
     else:
@@ -41,7 +44,6 @@ def register(request):
         profile_form = UserProfileForm()
 
     return render(request, 'app/register.html', {'user_form': user_form, 'profile_form': profile_form})
-
 
 def user_login(request):
     if request.method == 'POST':
@@ -73,7 +75,7 @@ def goodbye_view(request):
     return render(request, 'app/goodbye.html')
 
 
-
+@staff_member_required()
 def dashboard_view(request):
     chat_messages = ChatMessage.objects.all()  # Barcha yozishmalarni olish
     return render(request, 'admin/dashboard.html', {'chat_messages': chat_messages})
