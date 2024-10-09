@@ -7,7 +7,9 @@ from django.db import IntegrityError
 from .models import ChatMessage
 from django.contrib.admin.views.decorators import staff_member_required
 
-
+#for instagram
+# from django.http import JsonResponse
+# from .instagram_bot import post_comment_on_media,get_media
 
 def index(request):
     user_name = request.user.username if request.user.is_authenticated else "Mehmon"
@@ -79,3 +81,41 @@ def goodbye_view(request):
 def dashboard_view(request):
     chat_messages = ChatMessage.objects.all()  # Barcha yozishmalarni olish
     return render(request, 'admin/dashboard.html', {'chat_messages': chat_messages})
+
+
+
+
+
+# def instagram_comment_view(request):
+#     if request.method == 'POST':
+#         user_id = request.POST.get('user_id')
+#         message = request.POST.get('message')
+#         media_id = request.POST.get('media_id')
+#
+#         try:
+#             response = post_comment_on_media(media_id, message)
+#             return JsonResponse(response)
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+#
+# def instagram_media_view(request):
+#     try:
+#         media = get_media()
+#         return JsonResponse(media)
+#     except Exception as e:
+#         return JsonResponse({'error': str(e)}, status=500)
+#
+#
+# import json
+# from django.views.decorators.csrf import csrf_exempt
+# from django.http import JsonResponse
+#
+# @csrf_exempt
+# def instagram_webhook(request):
+#     if request.method == 'POST':
+#         data = json.loads(request.body)
+#         if data.get('entry'):
+#             for entry in data['entry']:
+#                 print(entry)  # Instagram xabarlarini qayta ishlash
+#         return JsonResponse({'status': 'received'}, status=200)
+#     return JsonResponse({'error': 'Invalid request'}, status=400)

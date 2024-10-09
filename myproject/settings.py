@@ -21,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-%+(ybzp7d&%%w3f7z@92qq7rk!_b*46&ifqc2u26+#hu#-gmzk')
+SAMBANOVA_API_KEY = "cecede0e-9ccd-44cd-a9fa-dbed784a2f0e"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
